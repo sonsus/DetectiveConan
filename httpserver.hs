@@ -18,6 +18,7 @@ c = defaultConfig { srvLog = stdLogger
                   }
 gsip = 0
 gsport = 0
+servername = "Detective Connan Server"
 
 emptyResponse = Response
   (statusCodeTriplet OK)
@@ -60,7 +61,7 @@ getHandler saddr url req = do
     "max_time" -> htmlResponse "max_time.html"
     "max_cpu"  -> htmlResponse "max_cpu.html"
     "avg_cpu"  -> htmlResponse "avg_cpu.html"
-    _ -> return $ err_response BadRequest
+    _ -> return $ errResponse NotFound
 
   putStrLn "<<- Sent response ->>"
   print res
@@ -68,12 +69,24 @@ getHandler saddr url req = do
   putStrLn ""
   return res
 
+errResponse :: StatusCode -> Response String
+errResponse sc =
+  let (a,b,c) = statusCodeTriplet sc
+      errorcode = show a ++ show b ++ show c
+      message = errorcode ++ " " ++ reason sc
+      html = "<html> <head> <title>" ++ message ++ "</title> </head>"
+               ++ "<body> <h1>" ++ message ++ "</h1> </body> </html>"
+  in Response (a,b,c) (reason sc)
+       [ mkHeader HdrServer servername
+       , mkHeader HdrConnection "close"
+       ] html
+
 htmlResponse :: String -> IO (Response String)
 htmlResponse filename = withFile filename ReadMode (\file -> do
   contents <- hGetContents file
   return $ Response
     (statusCodeTriplet OK) (reason OK)
-    [ mkHeader HdrServer "Detective Connan Server"
+    [ mkHeader HdrServer servername
     , mkHeader HdrContentType "text/html"
     -- , mkHeader HdrContentLength "14"
     , mkHeader HdrConnection "close"
