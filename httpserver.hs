@@ -40,14 +40,8 @@ main :: IO ()
 main = serverWith c handler
 
 handler :: Handler String
-handler saddr url req =
-  case rqMethod req of
-    GET  -> getHandler saddr url req
-    POST -> postHandler saddr url req
-
-getHandler :: Handler String
-getHandler saddr url req = do
-  putStrLn "<<- Got GET request ->>"
+handler saddr url req = do
+  putStrLn "<<- Got request ->>"
   putStr "saddr: "
   print saddr
   putStr "url: "
@@ -57,17 +51,32 @@ getHandler saddr url req = do
   print (rqBody req)
   putStrLn ""
 
-  res <- case url_path url of
-    "max_time" -> htmlResponse "max_time.html"
-    "max_cpu"  -> htmlResponse "max_cpu.html"
-    "avg_cpu"  -> htmlResponse "avg_cpu.html"
-    _ -> return $ errResponse NotFound
+  res <- case rqMethod req of
+    GET  -> getHandler saddr url req
+    POST -> postHandler saddr url req
 
   putStrLn "<<- Sent response ->>"
   print res
   print (rspBody res)
   putStrLn ""
   return res
+
+
+getHandler :: Handler String
+getHandler saddr url req = do
+  case url_path url of
+    "max_time" -> htmlResponse "max_time.html"
+    "max_cpu"  -> htmlResponse "max_cpu.html"
+    "avg_cpu"  -> htmlResponse "avg_cpu.html"
+    _ -> return $ errResponse NotFound
+
+postHandler :: Handler String
+postHandler saddr url req
+  | url_path url /= "data" = return $ errResponse Forbidden
+  | not $ checkAddr saddr  = return $ errResponse BadRequest
+  | otherwise = updateData (rqBody req) >> return (respond OK)
+  where checkAddr (SockAddrInet gsport gsip) = True
+        checkAddr _ = False
 
 errResponse :: StatusCode -> Response String
 errResponse sc =
@@ -93,35 +102,6 @@ htmlResponse filename = withFile filename ReadMode (\file -> do
     ]
     contents -- ++ "\r\n"
   )
-
-postHandler :: Handler String
-postHandler saddr url req = do
-  putStrLn "<<- Got POST request ->>"
-  putStr "saddr: "
-  print saddr
-  putStr "url: "
-  print url
-  putStr "req: "
-  print req
-  print (rqBody req)
-  putStrLn ""
-
-  res <- if url_path url /= "data"
-   then return $ err_response Forbidden
-   else if not $ checkAddr saddr
-         then return $ err_response BadRequest
-         else updateData (rqBody req)
-               >> return (respond OK)
-
-  putStrLn "<<- Sent response ->>"
-  print res
-  print (rspBody res)
-  putStrLn ""
-
-  return res
-
-  where checkAddr (SockAddrInet gsport gsip) = True
-        checkAddr _ = False
 
 updateData :: String -> IO ()
 updateData a = do
