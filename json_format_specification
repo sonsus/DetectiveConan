@@ -1,0 +1,20 @@
+[
+  {
+    "tstmp":
+    {
+    , "yr" str
+    , "month" str
+    , "date" str
+    , "second" int
+    }
+
+    "data":
+    [
+      { "user" str
+      , "cpu" float
+      , "proc" str
+      }
+    ]
+  }
+]
+
