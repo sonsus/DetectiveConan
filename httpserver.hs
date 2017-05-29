@@ -4,7 +4,10 @@ import Network.Socket
 import Network.URL
 import System.IO hiding (hGetContents)
 import System.IO.Strict (hGetContents)
+import Data.ByteString.Lazy.Char8 (pack)
 
+import Analyze
+import Data.Aeson (eitherDecode)
 
 -- macro - like values
 gsip = 0
@@ -84,7 +87,7 @@ htmlResponse filename = withFile filename ReadMode (\file -> do
   )
 
 updateData :: String -> IO ()
-updateData a = do
-  putStrLn "New data updated"
-  print a
-  putStrLn ""
+updateData dat = case eitherDecode (pack dat) of
+  Left err -> putStrLn "recieved corrupted json data:"
+               >> print err >> print dat
+  Right js -> const (return ()) $ analyze js
