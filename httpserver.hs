@@ -4,10 +4,12 @@ import Network.Socket
 import Network.URL
 import System.IO hiding (hGetContents)
 import System.IO.Strict (hGetContents)
-import Data.ByteString.Lazy.Char8 (pack)
+import Data.ByteString.Lazy.Char8 (pack, unpack)
 
 import Analyze
 import Data.Aeson (eitherDecode)
+
+import Html
 
 -- macro - like values
 gsip = 0
@@ -66,8 +68,7 @@ errResponse sc =
   let (a,b,c) = statusCodeTriplet sc
       errorcode = show a ++ show b ++ show c
       message = errorcode ++ " " ++ reason sc
-      html = "<html> <head> <title>" ++ message ++ "</title> </head>"
-               ++ "<body> <h1>" ++ message ++ "</h1> </body> </html>"
+      html = unpack $ genErrPage message
   in Response (a,b,c) (reason sc)
        [ mkHeader HdrServer servername
        , mkHeader HdrConnection "close"
