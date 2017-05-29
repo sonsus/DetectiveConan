@@ -5,39 +5,19 @@ import Network.URL
 import System.IO hiding (hGetContents)
 import System.IO.Strict (hGetContents)
 
-simpleEchoHandler :: Handler String
-simpleEchoHandler saddr url req = do
-  print saddr
-  print url
-  print req
-  return simpleResponse
 
-c = defaultConfig { srvLog = stdLogger
-                  , srvHost = "localhost"
-                  , srvPort = 8004
-                  }
+-- macro - like values
 gsip = 0
 gsport = 0
 servername = "Detective Connan Server"
 
-emptyResponse = Response
-  (statusCodeTriplet OK)
-  (reason OK)
-  [ mkHeader HdrConnection "close" ]
-  "Hello World!\r\n"
-
-simpleResponse = Response
-  (statusCodeTriplet OK)
-  (reason OK)
-  [ mkHeader HdrServer "Detective Connan Server"
-  , mkHeader HdrContentType "text/html"
-  , mkHeader HdrContentLength "14"
-  , mkHeader HdrConnection "close"
-  ]
-  "Hello World!\r\n"
-
 main :: IO ()
-main = serverWith c handler
+main = serverWith defaultConfig
+  { srvLog = stdLogger -- log to stdout
+  , srvHost = "0.0.0.0" -- open to all client
+  --, srvHost = 172.17.0.86.* -- open to the subnet
+  , srvPort = 8004
+  } handler
 
 handler :: Handler String
 handler saddr url req = do
@@ -65,7 +45,7 @@ handler saddr url req = do
 getHandler :: Handler String
 getHandler saddr url req = do
   case url_path url of
-    "max_time" -> htmlResponse "max_time.html"
+    "use_time" -> htmlResponse "use_time.html"
     "max_cpu"  -> htmlResponse "max_cpu.html"
     "avg_cpu"  -> htmlResponse "avg_cpu.html"
     _ -> return $ errResponse NotFound
