@@ -2,8 +2,12 @@
 
 <head>
 <style>
+  #headline {
+    font-size: 24pt;
+  }
   table {
     background-color: rgb(199, 199, 199);
+    border-spacing: 1;
   }
   tr {
     color: rgb(80, 80, 80);
@@ -14,13 +18,15 @@
     padding: 3px 4px 2px;
     height: 19px;
   }
-  .hltr {
-    background-color: rgb(233, 125, 125);
-  }
-  .tablelabel {
+  #tablelabel {
     color: rgb(0, 0, 0);
     background-color: rgb(217, 238, 236);
   }
+  .hltr {
+    background-color: rgb(233, 125, 125);
+  }
+
+
 </style>
 
   <title>Max_Cpu</title>
@@ -28,18 +34,18 @@
 </head>
 
 <body> <div align="center">
-  <p align="center"> <span style="font-size: 24pt;">MAX CPU USAGE TOP RECORDERS</span> </p>
-  <table class="__se_tbl" border="0" cellpadding="0" cellspacing="1"> <tbody>
-    <tr>
-      <td class="tablelabel">
+  <p> <span id=headline>MAX CPU USAGE TOP RECORDERS</span> </p>
+  <table> <tbody>
+    <tr id="tablelabel">
+      <td>
         rank</td>
-      <td class="tablelabel">
+      <td>
         user id</td>
-      <td class="tablelabel">
+      <td>
         max cpu usage</td>
-      <td class="tablelabel">
+      <td>
         command</td>
-      <td class="tablelabel">
+      <td>
         timestamp</td>
     </tr>
     <tr class="hltr">
