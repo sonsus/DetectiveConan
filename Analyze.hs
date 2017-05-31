@@ -9,6 +9,7 @@ import Data.Map.Lazy hiding (map, foldl, foldr)
 import Data.Function
 import Data.List
 import Data.Time.Calendar
+import Data.ByteString.Lazy.Char8 (pack)
 
 data PeakPoint = PeakPoint
   { time_stamp :: TimeStamp
@@ -21,7 +22,7 @@ data TimeStamp = TimeStamp
   } deriving (Show, Read, Eq)
 
 data Activity = Activity
-  { proc_name :: Maybe String
+  { proc_name :: String
   , cpu_usage :: Float
   , user_id :: String
   } deriving (Show, Read, Eq)
@@ -66,9 +67,9 @@ instance ToJSON TimeStamp where
 
 instance FromJSON Activity where
   parseJSON = withObject "Activity" $ \obj -> Activity
-    <$> obj .: "user"
+    <$> obj .: "proc"
     <*> obj .: "cpu"
-    <*> obj .: "proc"
+    <*> obj .: "user"
 
 instance ToJSON Activity where
   toJSON (Activity u c p) = object
@@ -82,15 +83,29 @@ instance ToJSON Activity where
     <> "proc" .= p
     )
 
+nullTimeStamp :: TimeStamp
+nullTimeStamp =  TimeStamp
+  { date_stamp = fromGregorian 0 0 0
+  , second_stamp = 0
+  }
+
 timediff :: TimeStamp -> TimeStamp -> Int
 timediff (TimeStamp j1 s1) (TimeStamp j2 s2) =
   24 * 60 * 60 * (fromInteger $ diffDays j1 j2) + (s2 - s1)
 
 
-type UserSpec = Map String (Int, Float, Float)
+data UserSpec = UserSpec
+  { total_time :: Int
+  , total_cpu  :: Float
+  , max_cpu    :: Float
+  , max_proc   :: String
+  , max_time   :: TimeStamp
+  } deriving (Show, Read, Eq)
 
--- Map user (total time, total cpu, max cpu)
-analyze :: [PeakPoint] -> UserSpec
+type UserData = Map String UserSpec
+
+-- Map user (total time, total cpu, max cpu, proc, time_stamp)
+analyze :: [PeakPoint] -> UserData
 analyze [] = empty
 analyze pps =
       -- dump element to accumulate all data
@@ -98,16 +113,35 @@ analyze pps =
       diffs = zip (bootstrap:pps) pps
    in foldl (flip accumulate) empty diffs
 
-accumulate :: (PeakPoint, PeakPoint) -> UserSpec -> UserSpec
-accumulate (oldPP, newPP) us =
+accumulate :: (PeakPoint, PeakPoint) -> UserData -> UserData
+accumulate (oldPP, newPP) ud =
   let residents = (intersect `on` nub.map user_id.act_data) oldPP newPP
       elapse = (timediff `on` time_stamp) oldPP newPP
-      us' = foldl (flip $ alter $ f elapse) us residents
-   in foldl (flip uptAct) us' $ act_data newPP
-  where f t (Just (u,c,m)) = Just (u+t,c,m)
-        f t Nothing = Just (0,0,0) -- the user first apears
+      ud' = foldr (alter $ accUseTime elapse) ud residents
+      newtime = time_stamp newPP
+   in foldr (alterCpu newtime) ud' $ act_data newPP
 
-uptAct :: Activity -> UserSpec -> UserSpec
-uptAct a = alter (h $ cpu_usage a) $ user_id a
-  where h cpu (Just (u,c,m)) = Just (u, c + cpu, max m cpu)
-        h cpu Nothing = Just (0,cpu,cpu) -- the user first apears
+accUseTime :: Int -> Maybe UserSpec -> Maybe UserSpec
+accUseTime t (Just us) =
+  let tt = total_time us
+   in Just us { total_time = tt + t }
+accUseTime t Nothing = -- the user first apears
+  Just $ UserSpec t 0 0 "" nullTimeStamp
+
+alterCpu :: TimeStamp -> Activity -> UserData -> UserData
+alterCpu ts (Activity ps cpu u) = alter accCpu u
+  where accCpu (Just us') =
+          let tcpu = total_cpu us' + cpu
+              mcpu = max_cpu us'
+              us = us' { total_cpu = tcpu }
+          in Just $ if mcpu > cpu then us
+                    else us { max_cpu = cpu
+                            , max_proc = ps
+                            , max_time = ts
+                            }
+        --h Nothing = undefined -- `accumulate` already handled
+        accCpu Nothing = Nothing
+
+ff :: IO [PeakPoint]
+ff = readFile "json.json"
+  >>= (\(Right x) -> return x) . eitherDecode . pack

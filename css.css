@@ -1,0 +1,19 @@
+table {
+  background-color: rgb(199, 199, 199);
+}
+tr {
+  color: rgb(80, 80, 80);
+  background-color: rgb(255, 255, 255);
+}
+td {
+  text-align: center;
+  padding: 3px 4px 2px;
+  height: 19px;
+}
+.hltr {
+  background-color: rgb(233, 125, 125);
+}
+.tablelabel {
+  color: rgb(0, 0, 0);
+  background-color: rgb(217, 238, 236);
+}
