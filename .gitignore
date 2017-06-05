@@ -1,2 +1,11 @@
 *.hi
 *.o
+udp-client
+udp-server
+tcp-client
+tcp-server
+uri-test
+uri-test.hs
+*.swp
+*.swo
+.html
